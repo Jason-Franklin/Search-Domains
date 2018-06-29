@@ -4,10 +4,12 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 const FILE = "words.txt"
 const EXTENSION = ".one"
-const USER = 'USER_NAME'
-const API_KEY = '222222222224333333333334e5545'
+const USER = 'USER'
+const API_KEY = 'AAAAAAAAAAAAAAA'
+const PRICE_THRESHOLD = "49.99" // Anything above this price is filtered from results
 const MIN_LENGTH = 3 
 const MAX_LENGTH = 10
+const MAX_PER_API_CALL = 50 // Name.com API limits this to 50
 //////////////////////////////////////////////////////////////////////////////////////////
 
 const fs = require('fs')
@@ -18,74 +20,67 @@ const input = fs.createReadStream(FILE)
 
 var lines = []
 
-let rl = readline.createInterface({
+var rl = readline.createInterface({
 	input: input	
 });
 
-rl.on('line', (line) => {
-	if (line.length <= MAX_LENGTH  && line.length >= MIN_LENGTH) {
-		lines.push(line)
-	}
+rl.on('line', line => {	
+
+	if (line.length <= MAX_LENGTH  && line.length >= MIN_LENGTH) { lines.push(line) }
+
 }).on('close', () => {
+
 	checkDomains().then( (data) => {
 		console.log(data)
 	}).catch( (err) => {
 		console.log(err)
 	})
+
 })
 
 async function checkDomains() {
 
-	let i = 0;
+	let i = 0
 
 	while (i < lines.length) {
 
 		let domains = ""
-
-		sliceOfLines = lines.slice(i, i+50)
-
-		for ( line of sliceOfLines ) {
+		for ( line of lines.slice(i, i += MAX_PER_API_CALL) ) { // Notice the += here
 			domains += `"${line}${EXTENSION}",`
-			//let domains = domains `${line[i]}.one`
-			i++;
 		}
 
 		domains = domains.slice(0, -1) // Remove trailing comma
 
 		let dataString = `{"domainNames":[${domains}]}`
-
-		let options = {
-			url: 'https://api.name.com/v4/domains:checkAvailability',
-			method: 'POST',
-			body: dataString,
-			auth: {
-				'user': USER,
-				'pass': API_KEY
-			}
-		}
-
-		p = new Promise( (resolve, reject) => {
-			request(options, (error, response, body) => {
-				if (!error && response.statusCode == 200) {
-					results = JSON.parse(body)["results"]
-					for ( let result of results ) {
-						if ( "purchasePrice" in result ) {
-							// This can be used to avoid premium domains for certain extensions 
-							//if (result["purchasePrice"] == "19.99" ) {
-								console.log(result["domainName"] )	
-							//}
-						}
-
-					}
-					resolve("SUCCESS")
-				} else {
-					reject("FAILURE")
+			let options = {
+				url: 'https://api.name.com/v4/domains:checkAvailability',
+				method: 'POST',
+				body: dataString,
+				auth: {
+					'user': USER,
+					'pass': API_KEY
 				}
+			}
+
+			let p = new Promise( (resolve, reject) => {
+				request(options, (error, response, body) => {
+					if (!error && response.statusCode == 200) {
+						results = JSON.parse(body)["results"]
+						for ( let result of results ) {
+							if ( "purchasePrice" in result ) {
+								if (parseFloat(result["purchasePrice"]) <= PRICE_THRESHOLD ) {
+									console.log(result["domainName"] )	
+								}
+							}
+						}
+						resolve("SUCCESS")
+					} else {
+						reject("FAILURE")
+					}
+				})
 			})
-		})
 
-		await p
-	
+			await p
+
 	}
-
 }
