@@ -1,0 +1,23 @@
+{
+  "name": "name",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+	"start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/usebosespeakers/name.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://gitlab.com/usebosespeakers/name/issues"
+  },
+  "homepage": "https://gitlab.com/usebosespeakers/name#README",
+  "dependencies": {
+    "request": "^2.87.0"
+  }
+}
